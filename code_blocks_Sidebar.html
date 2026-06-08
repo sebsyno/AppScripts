@@ -1,0 +1,524 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --gd-offwhite:   #E2F5DB;
+    --gd-secondary:  #D5F3C2;
+    --gd-tertiary:   #B4F5B5;
+    --gd-accent1:    #67E387;
+    --gd-accent2:    #00C859;
+    --gd-mid:        #00A74E;
+    --gd-sat:        #007C3E;
+    --gd-dark:       #012116;
+    --gd-offblack:   #002F1E;
+
+    --bg:        #ffffff;
+    --surface:   #f4f7f5;
+    --border:    #d0dad2;
+    --accent:    #007C3E;
+    --accent-hv: #00A74E;
+    --text:      #1F2621;
+    --text-dim:  #596973;
+  }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    font-size: 12px;
+    background: var(--bg);
+    color: var(--text);
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  .header {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 12px;
+    flex-shrink: 0;
+  }
+  .header-title {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: .05em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    margin-bottom: 8px;
+  }
+
+  .lang-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 4px;
+  }
+  .lang-btn {
+    background: #fff;
+    border: 1px solid var(--border);
+    color: var(--text);
+    border-radius: 4px;
+    padding: 6px 2px;
+    font-size: 11px;
+    cursor: pointer;
+    font-weight: 500;
+    transition: all .1s ease;
+  }
+  .lang-btn:hover {
+    background: var(--gd-secondary);
+    border-color: var(--gd-mid);
+  }
+  .lang-btn.active {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #fff;
+    font-weight: bold;
+  }
+
+  .status-bar {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 12px;
+    background: #fff;
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+  }
+  .status-dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: #b0bec5;
+  }
+  .status-dot.ok  { background: var(--gd-accent2); }
+  .status-dot.err { background: #ff5252; }
+  .status-text {
+    font-size: 11px;
+    color: var(--text-dim);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .preview-wrap {
+    flex: 1;
+    overflow-y: auto;
+    padding: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    background: #fafafa;
+  }
+  .preview-label {
+    font-size: 10px;
+    text-transform: uppercase;
+    font-weight: 700;
+    color: var(--text-dim);
+  }
+  .preview-box {
+    background: var(--gd-dark);
+    border-radius: 6px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    min-height: 120px;
+  }
+  .preview-titlebar {
+    background: var(--gd-offblack);
+    padding: 6px 12px;
+    font-size: 11px;
+    color: #8C9DA1;
+    font-family: monospace;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+  }
+  .dots { display: flex; gap: 4px; margin-right: 4px;}
+  .dots span { width: 6px; height: 6px; border-radius: 50%; }
+
+  .preview-content {
+    padding: 12px;
+    font-family: 'Consolas', 'Courier New', monospace;
+    font-size: 11px;
+    line-height: 1.5;
+    white-space: pre;
+    overflow-x: auto;
+    color: var(--gd-offwhite);
+  }
+  .preview-empty {
+    color: #617d72;
+    font-style: italic;
+    font-family: sans-serif;
+  }
+
+  .actions {
+    padding: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    border-top: 1px solid var(--border);
+    background: #fff;
+  }
+  .btn-primary {
+    background: var(--accent);
+    color: #fff;
+    border: none;
+    border-radius: 4px;
+    padding: 10px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  .btn-primary:hover { background: var(--accent-hv); }
+  .btn-primary:disabled { background: #cfd8dc; color: #90a4ae; cursor: not-allowed; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-title">Language Selection</div>
+  <div class="lang-grid" id="langGrid"></div>
+</div>
+
+<div class="status-bar">
+  <div class="status-dot" id="statusDot"></div>
+  <div class="status-text" id="statusText">Highlight text inside your Doc...</div>
+</div>
+
+<div class="preview-wrap">
+  <div class="preview-label">Live Preview Window</div>
+  <div class="preview-box">
+    <div class="preview-titlebar">
+      <div class="dots">
+        <span style="background:#ff5f56"></span>
+        <span style="background:#ffbd2e"></span>
+        <span style="background:#27c93f"></span>
+      </div>
+      <span id="previewFilename">code.txt</span>
+    </div>
+    <div class="preview-content" id="previewContent"><span class="preview-empty">No active selection captured.</span></div>
+  </div>
+</div>
+
+<div class="actions">
+  <button class="btn-primary" id="btnApply" onclick="applyFormatting()" disabled>Insert Code Block into Doc</button>
+</div>
+
+<script>
+const LANGUAGES = [
+  { id:'scala',      label:'Scala',   ext:'scala' },
+  { id:'java',       label:'Java',    ext:'java' },
+  { id:'python',     label:'Python',  ext:'py' },
+  { id:'bash',       label:'Bash/Sh', ext:'sh' },
+  { id:'javascript', label:'JS',      ext:'js' },
+  { id:'typescript', label:'TS',      ext:'ts' },
+  { id:'go',         label:'Go',      ext:'go' },
+  { id:'rust',       label:'Rust',    ext:'rs' },
+  { id:'sql',        label:'SQL',     ext:'sql' },
+  { id:'yaml',       label:'YAML',    ext:'yaml' },
+  { id:'json',       label:'JSON',    ext:'json' },
+  { id:'markdown',   label:'Markdown',ext:'md' }
+];
+
+let selectedLang = null;
+let rawCode = '';
+
+// Render Grid elements UI
+const grid = document.getElementById('langGrid');
+LANGUAGES.forEach(lang => {
+  const btn = document.createElement('button');
+  btn.className = 'lang-btn';
+  btn.id = 'lang-' + lang.id;
+  btn.innerText = lang.label;
+  btn.onclick = () => selectLang(lang);
+  grid.appendChild(btn);
+});
+
+function selectLang(lang) {
+  LANGUAGES.forEach(l => document.getElementById('lang-'+l.id).classList.remove('active'));
+  document.getElementById('lang-'+lang.id).classList.add('active');
+  selectedLang = lang;
+  document.getElementById('previewFilename').textContent = lang.label + "  ·  main." + lang.ext;
+  renderPreview();
+  updateApplyButton();
+}
+
+function receiveCode(code) {
+  rawCode = code || '';
+  if (rawCode.trim()) {
+    setStatus('ok', 'Selection captured (' + rawCode.split('\n').length + ' lines)');
+  } else {
+    setStatus('err', 'No source selection detected inside document.');
+  }
+  renderPreview();
+  updateApplyButton();
+}
+
+function setStatus(type, msg) {
+  document.getElementById('statusDot').className = 'status-dot ' + (type || '');
+  document.getElementById('statusText').textContent = msg;
+}
+
+function getRules(langId) {
+  // Global catch-all rule fallback for safety
+  const globalFallback = [
+    { re: /"(?:[^"\\]|\\.)*"/gy, color: '#A5D6A7' },
+    { re: /'(?:[^'\\]|\\.)*'/gy, color: '#A5D6A7' },
+    { re: /\b\d+(?:\.\d+)?\b/gy, color: '#64B5F6' }
+  ];
+
+  const rulesMap = {
+    // ─── SCALA (IntelliJ Dracula Variant) ───
+    scala: [
+      { re: /\/\/.*/gy, color: '#808080' },                               // Comments: Muted Grey
+      { re: /\/\*[\s\S]*?\*\//gy, color: '#629755' },                     // Scaladoc: Greenish Olive
+      { re: /\b(val|var|def|class|object|trait|extends|with|import|package|case|match|sealed|abstract|override|final|private|protected|implicit|lazy|new|this|super|if|else|for|while|do|return|yield|type|try|catch|finally|throw)\b/gy, color: '#CC7832' }, // Keywords: Dark Orange
+      { re: /"(?:[^"\\]|\\.)*"/gy, color: '#6A8759' },                     // Strings: Forest Green
+      { re: /'(?:[^'\\]|\\.)*'/gy, color: '#6A8759' },                     // Chars: Forest Green
+      { re: /\b(Unit|Int|Long|Double|Float|Boolean|String|Any|AnyRef|Nothing|List|Map|Set|Option|Some|None)\b/gy, color: '#9876AA' }, // Types: Muted Purple
+      { re: /\b0x[\da-fA-F]+\b|\b\d+(?:\.\d+)?(?:[eE][+-]?\d+)?\b/gy, color: '#6897BB' }, // Numbers: Slate Blue
+      { re: /\b(true|false|null|Nil)\b/gy, color: '#CC7832' },             // Booleans/Nulls: Dark Orange
+      { re: /\b[A-Z][a-zA-Z0-9_]*\b/gy, color: '#A9B7C6' },               // Class Names: Off-white
+      { re: /\b[a-z_][a-zA-Z0-9_]*(?=\s*\[|\s*\()/gy, color: '#FFC66D' }   // Methods: Mustard Yellow
+    ],
+
+    // ─── JAVA (Classic Eclipse/Standard IDE) ───
+    java: [
+      { re: /\/\/.*/gy, color: '#3F7F5F' },                               // Comments: Slate Green
+      { re: /\/\*[\s\S]*?\*\//gy, color: '#3F5FBF' },                     // Javadoc: Dark Blue
+      { re: /\b(public|private|protected|static|final|abstract|class|interface|enum|extends|implements|import|package|new|this|super|return|if|else|for|while|do|switch|case|break|continue|try|catch|finally|throw|throws)\b/gy, color: '#7F0055' }, // Keywords: Deep Maroon
+      { re: /"(?:[^"\\]|\\.)*"/gy, color: '#2A00FF' },                     // Strings: Royal Blue
+      { re: /'(?:[^'\\]|\\.)*'/gy, color: '#2A00FF' },                     // Chars: Royal Blue
+      { re: /\b(void|int|long|double|float|boolean|char|byte|short|String|Object|Integer|List|Map|Set)\b/gy, color: '#000000' }, // Native Types: Black/Bold
+      { re: /\b0x[\da-fA-F]+\b|\b\d+(?:\.\d+)?\b/gy, color: '#000000' },    // Numbers: Black
+      { re: /\b(true|false|null)\b/gy, color: '#7F0055' },                 // Booleans: Deep Maroon
+      { re: /@[a-zA-Z_][a-zA-Z0-9_]*/gy, color: '#646464' },               // Annotations: Charcoal Grey
+      { re: /\b[a-z_][a-zA-Z0-9_]*(?=\s*\()/gy, color: '#000000' }         // Methods: Black
+    ],
+
+    // ─── PYTHON (Community / PyCharm Standard) ───
+    python: [
+      { re: /#.*/gy, color: '#808080' },                                  // Comments: Muted Grey
+      { re: /"""[\s\S]*?"""/gy, color: '#5C6370' },                       // Docstrings: Soft Grey
+      { re: /\b(def|class|import|from|as|return|if|elif|else|for|while|in|not|and|or|is|pass|break|continue|try|except|finally|raise|with|yield|lambda|global|nonlocal|async|await)\b/gy, color: '#FB8C00' }, // Keywords: Soft Orange
+      { re: /"(?:[^"\\]|\\.)*"/gy, color: '#4CAF50' },                     // Strings: Emerald Green
+      { re: /'(?:[^'\\]|\\.)*'/gy, color: '#4CAF50' },                     // Strings: Emerald Green
+      { re: /@[a-zA-Z_][a-zA-Z0-9_.]*/gy, color: '#BBB529' },               // Decorators: Yellow-Gold
+      { re: /\b(print|len|range|type|list|dict|set|tuple|str|int|float|bool|abs|open)\b/gy, color: '#8888C6' }, // Builtins: Soft Violet
+      { re: /\b0x[\da-fA-F]+\b|\b\d+(?:\.\d+)?\b/gy, color: '#0000FF' },    // Numbers: Pure Blue
+      { re: /\b(None|True|False)\b/gy, color: '#FB8C00' },                 // Booleans/None: Soft Orange
+      { re: /\bself\b/gy, color: '#94558D' },                              // Self: Red-Purple
+      { re: /\b[a-z_][a-zA-Z0-9_]*(?=\s*\()/gy, color: '#FFC66D' }         // Functions: Warm Sand
+    ],
+
+    // ─── BASH / SHELL (Classic Monokai Terminal Layout) ───
+    bash: [
+      { re: /#.*/gy, color: '#75715E' },                                  // Comments: Muddy Greenish Grey
+      { re: /\b(if|then|else|elif|fi|for|while|do|done|case|esac|in|function|return|exit|export|local)\b/gy, color: '#F92672' }, // Keywords: Hot Pink
+      { re: /"(?:[^"\\]|\\.)*"/gy, color: '#E6DB74' },                     // Strings: Straw Yellow
+      { re: /'(?:[^'\\]|\\.)*'/gy, color: '#E6DB74' },                     // Strings: Straw Yellow
+      { re: /\b(echo|cd|ls|pwd|grep|awk|sed|mkdir|rm|cp|mv|touch|chmod|sudo|cat)\b/gy, color: '#66D9EF' }, // Commands: Electric Cyan
+      { re: /\$[a-zA-Z_][a-zA-Z0-9_]*|\$\{[a-zA-Z_][a-zA-Z0-9_]*\}/gy, color: '#AE81FF' }, // Variables: Soft Purple
+      { re: /\b\d+\b/gy, color: '#AE81FF' }                                // Numbers: Soft Purple
+    ],
+
+    // ─── JAVASCRIPT (Modern VS Code Dark+) ───
+    javascript: [
+      { re: /\/\/.*/gy, color: '#6A9955' },                               // Comments: Warm Green
+      { re: /\/\*[\s\S]*?\*\//gy, color: '#6A9955' },                     // Block Comments: Warm Green
+      { re: /\b(const|let|var|function|return|if|else|for|while|do|switch|case|break|continue|new|this|class|extends|import|export|default|from|of|in|try|catch|finally|throw|typeof|instanceof|async|await)\b/gy, color: '#569CD6' }, // Keywords: Light Blue
+      { re: /"(?:[^"\\]|\\.)*"/gy, color: '#CE9178' },                     // Strings: Salmon Red
+      { re: /'(?:[^'\\]|\\.)*'/gy, color: '#CE9178' },                     // Strings: Salmon Red
+      { re: /`[^`]*`/gy,            color: '#CE9178' },                    // Template Strings: Salmon Red
+      { re: /\b0x[\da-fA-F]+\b|\b\d+(?:\.\d+)?\b/gy, color: '#B5CEA8' },    // Numbers: Light Sage Green
+      { re: /\b(true|false|null|undefined)\b/gy, color: '#569CD6' },       // Primitives: Light Blue
+      { re: /\b(window|document|console|Object|Array|String|Number|Boolean|Promise|JSON|Map|Set)\b/gy, color: '#4EC9B0' }, // Objects: Mint Turquoise
+      { re: /\b[a-zA-Z_][a-zA-Z0-9_]*(?=\s*\()/gy, color: '#DCDCAA' }      // Functions: Pale Yellow
+    ],
+
+    // ─── TYPESCRIPT (Slightly altered VS Code Palette) ───
+    typescript: [
+      { re: /\/\/.*/gy, color: '#6A9955' },                               // Comments: Warm Green
+      { re: /\/\*[\s\S]*?\*\//gy, color: '#6A9955' },                     // Block Comments: Warm Green
+      { re: /\b(const|let|var|function|return|if|else|for|while|do|switch|case|break|continue|new|this|class|extends|import|export|default|from|of|in|try|catch|finally|throw|typeof|instanceof|async|await|interface|type|enum|implements|private|public|protected|readonly|abstract|declare|namespace|as|keyof|any|unknown|void|never)\b/gy, color: '#569CD6' }, // Keywords: Light Blue
+      { re: /"(?:[^"\\]|\\.)*"/gy, color: '#CE9178' },                     // Strings: Salmon Red
+      { re: /'(?:[^'\\]|\\.)*'/gy, color: '#CE9178' },                     // Strings: Salmon Red
+      { re: /`[^`]*`/gy,            color: '#CE9178' },                    // Templates: Salmon Red
+      { re: /\b(string|number|boolean|symbol|object|Array|Promise|Record|Omit|Pick|Partial|Required)\b/gy, color: '#4EC9B0' }, // Global Interfaces: Mint Turquoise
+      { re: /\b0x[\da-fA-F]+\b|\b\d+(?:\.\d+)?\b/gy, color: '#B5CEA8' },    // Numbers: Light Sage Green
+      { re: /\b(true|false|null|undefined)\b/gy, color: '#569CD6' },       // Primitives: Light Blue
+      { re: /\b[A-Z][a-zA-Z0-9_]*\b/gy, color: '#C586C0' },               // Custom Types/Interfaces: Dark Pink
+      { re: /@[a-zA-Z_][a-zA-Z0-9_]*/gy, color: '#CD9731' },               // Decorators: Ochre Orange
+      { re: /\b[a-zA-Z_][a-zA-Z0-9_]*(?=\s*\()/gy, color: '#DCDCAA' }      // Functions: Pale Yellow
+    ],
+
+    // ─── GO (Golar White/Blue Base) ───
+    go: [
+      { re: /\/\/.*/gy, color: '#6A9955' },                               // Comments: Warm Green
+      { re: /\/\*[\s\S]*?\*\//gy, color: '#6A9955' },
+      { re: /\b(package|import|func|var|const|type|struct|interface|map|chan|go|defer|return|if|else|for|range|switch|case|default|fallthrough|break|continue)\b/gy, color: '#C586C0' }, // Keywords: Magenta
+      { re: /"(?:[^"\\]|\\.)*"/gy, color: '#CE9178' },                     // Strings: Salmon
+      { re: /`[^`]*`/gy,            color: '#CE9178' },                    // Raw Strings: Salmon
+      { re: /\b(string|bool|int|int8|int16|int32|int64|uint|uint8|uint16|uint32|uint64|float32|float64|complex64|complex128|byte|rune|uintptr|error)\b/gy, color: '#569CD6' }, // Types: Light Blue
+      { re: /\b0x[\da-fA-F]+\b|\b\d+(?:\.\d+)?\b/gy, color: '#B5CEA8' },    // Numbers: Light Sage
+      { re: /\b(true|false|nil)\b/gy, color: '#C586C0' },                  // Primitives: Magenta
+      { re: /\b[a-zA-Z_][a-zA-Z0-9_]*(?=\s*\()/gy, color: '#DCDCAA' }      // Functions: Pale Yellow
+    ],
+
+    // ─── RUST (Rust-Lang Orange/Cyan Framework) ───
+    rust: [
+      { re: /\/\/.*/gy, color: '#9E9E9E' },                               // Comments: Flat Grey
+      { re: /\b(fn|let|mut|const|static|struct|enum|trait|impl|use|mod|pub|self|Self|if|else|match|for|while|loop|return|break|continue|async|await|type|where|unsafe|move)\b/gy, color: '#E06C75' }, // Keywords: Soft Coral
+      { re: /"(?:[^"\\]|\\.)*"/gy, color: '#98C379' },                     // Strings: Soft Green
+      { re: /\b(i8|i16|i32|i64|i128|isize|u8|u16|u32|u64|u128|usize|f32|f64|str|String|Option|Result|Some|None|Ok|Err|Box|Vec)\b/gy, color: '#E5C07B' }, // Types: Soft Gold
+      { re: /\b0x[\da-fA-F]+\b|\b\d+(?:\.\d+)?\b/gy, color: '#D19A66' },    // Numbers: Light Amber
+      { re: /\b(true|false)\b/gy, color: '#E06C75' },                      // Booleans: Soft Coral
+      { re: /[a-zA-Z_][a-zA-Z0-9_]*!/gy, color: '#61AFEF' },               // Macros: Sky Blue
+      { re: /\b[a-zA-Z_][a-zA-Z0-9_]*(?=\s*\()/gy, color: '#61AFEF' }      // Functions: Sky Blue
+    ],
+
+    // ─── SQL (Classic Database Layout) ───
+    sql: [
+      { re: /--.*/gy, color: '#008000' },                                  // Comments: Forest Green
+      { re: /\b(SELECT|FROM|WHERE|JOIN|LEFT|RIGHT|INNER|OUTER|ON|GROUP|ORDER|BY|HAVING|LIMIT|INSERT|INTO|VALUES|UPDATE|SET|DELETE|CREATE|DROP|ALTER|TABLE|INDEX|VIEW|AS|AND|OR|NOT|IN|IS|NULL|CASE|WHEN|THEN|ELSE|END|WITH|UNION|ALL|EXISTS|LIKE|BETWEEN)\b/giy, color: '#0000FF' }, // Keywords: Dark Corporate Blue
+      { re: /"(?:[^"\\]|\\.)*"/gy, color: '#FF00FF' },                     // Quotes: Magenta
+      { re: /'(?:[^'\\]|\\.)*'/gy, color: '#FF00FF' },                     // Quotes: Magenta
+      { re: /\b(int|integer|varchar|char|text|boolean|bool|date|time|timestamp|float|double|decimal|numeric)\b/giy, color: '#800000' }, // Types: Maroon
+      { re: /\b\d+(?:\.\d+)?\b/gy, color: '#FF0000' },                     // Numbers: Red
+      { re: /\b(COUNT|SUM|AVG|MIN|MAX|COALESCE|CAST|NOW|LOWER|UPPER)\b/giy, color: '#FF00FF' } // System Functions: Magenta
+    ],
+
+    // ─── YAML (Minimalist Slate Config style) ───
+    yaml: [
+      { re: /#.*/gy, color: '#7A8A99' },                                  // Comments: Blue Slate
+      { re: /^(\s*-?\s*[a-zA-Z_][a-zA-Z0-9_\-]*)\s*:/gmy, color: '#0058C4' }, // Struct Keys: Deep Royal Blue
+      { re: /"(?:[^"\\]|\\.)*"/gy, color: '#17A2B8' },                     // Strings: Teal
+      { re: /'(?:[^'\\]|\\.)*'/gy, color: '#17A2B8' },                     // Strings: Teal
+      { re: /\b(true|false|null|yes|no)\b/gy, color: '#D9381E' },          // Directives: Crimson
+      { re: /\b\d+(?:\.\d+)?\b/gy, color: '#6F42C1' }                      // Numbers: Deep Violet
+    ],
+
+    // ─── JSON (Native Node/Chrome Inspector styling) ───
+    json: [
+      { re: /"(?:[^"\\]|\\.)*"\s*(?=:)/gy, color: '#92278F' },             // JSON Properties: Dark Purple
+      { re: /"(?:[^"\\]|\\.)*"/gy, color: '#2B8339' },                     // Values: Forest Green
+      { re: /\b(true|false|null)\b/gy, color: '#252525' },                 // Active Core elements: Off-black
+      { re: /\b\d+(?:\.\d+)?\b/gy, color: '#1F77B4' }                      // Numbers: Blue
+    ],
+
+    // ─── MARKDOWN (Classic GitHub Dark Theme Accents) ───
+    markdown: [
+      { re: /^#{1,6}\s.*/gmy,       color: '#58A6FF' },                    // Headings: Markdown Cyan-Blue
+      { re: /^\s*[-*+]\s|^\s*\d+\.\s/gmy, color: '#FF7B72' },              // Bullets and Lists: Coral Red
+      { re: /`[^`]+`/gy,            color: '#FFA657' },                    // Inline Backticks: Pale Orange
+      { re: /\*\*[^*]+\*\*/gy,      color: '#FFFFFF' },                    // Bold Structural Highlights: White
+      { re: /\*[^*]+\*/gy,          color: '#8B949E' },                    // Italics: Distant Grey
+      { re: /^\s*>\s.*/gmy,         color: '#8B949E' }                     // Blockquotes: Distant Grey
+    ]
+  };
+
+  return rulesMap[langId] || globalFallback;
+}
+
+/**
+ * Tokenizes raw text string strings into explicit styling token maps
+ */
+function tokenizeLine(line, langId) {
+  const rules = getRules(langId);
+  let tokens = [];
+  let i = 0;
+  
+  while (i < line.length) {
+    let matched = false;
+    for (const rule of rules) {
+      rule.re.lastIndex = i;
+      const m = rule.re.exec(line);
+      if (m && m.index === i) {
+        tokens.push({ text: m[0], color: rule.color });
+        i += m[0].length;
+        matched = true;
+        break;
+      }
+    }
+    if (!matched) {
+      // Aggregate plain unformatted layout characters
+      if (tokens.length > 0 && !tokens[tokens.length - 1].color) {
+        tokens[tokens.length - 1].text += line[i];
+      } else {
+        tokens.push({ text: line[i], color: '#E2F5DB' });
+      }
+      i++;
+    }
+  }
+  return tokens;
+}
+
+function renderPreview() {
+  const el = document.getElementById('previewContent');
+  if (!rawCode.trim()) {
+    el.innerHTML = '<span class="preview-empty">No active selection captured.</span>';
+    return;
+  }
+  const langId = selectedLang ? selectedLang.id : 'javascript';
+  const lines = rawCode.split('\n');
+  
+  let html = '';
+  lines.forEach((line, idx) => {
+    const tokens = tokenizeLine(line, langId);
+    const lineHtml = tokens.map(t => `<span style="color:${t.color}">${escapeHtml(t.text)}</span>`).join('');
+    html += `<div><span style="color:#67E387; opacity:0.5; user-select:none; margin-right:10px;">${idx+1}</span>${lineHtml || ' '}</div>`;
+  });
+  el.innerHTML = html;
+}
+
+function escapeHtml(str) {
+  return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+function updateApplyButton() {
+  const btn = document.getElementById('btnApply');
+  btn.disabled = !(rawCode.trim() && selectedLang);
+}
+
+function applyFormatting() {
+  if (!rawCode.trim() || !selectedLang) return;
+  const btn = document.getElementById('btnApply');
+  btn.disabled = true;
+  btn.textContent = 'Formatting Doc...';
+  
+  // Transform entire text chunk layout into serialized dynamic tokens map matrix
+  const lines = rawCode.split('\n');
+  const tokenizedPayload = lines.map(line => tokenizeLine(line, selectedLang.id));
+  
+  google.script.run
+    .withSuccessHandler(() => {
+      btn.disabled = false;
+      updateApplyButton();
+      btn.textContent = 'Insert Code Block into Doc';
+      setStatus('ok', 'Render Complete!');
+    })
+    .withFailureHandler((err) => {
+      btn.disabled = false;
+      updateApplyButton();
+      btn.textContent = 'Insert Code Block into Doc';
+      setStatus('err', err.message);
+    })
+    .applyCodeBlock(tokenizedPayload, selectedLang.label);
+}
+
+function pollSelection() {
+  google.script.run
+    .withSuccessHandler((code) => { 
+      if (code !== null && code !== rawCode) receiveCode(code); 
+    })
+    .getSelectedText();
+}
+
+setInterval(pollSelection, 1500);
+</script>
+</body>
+</html>
