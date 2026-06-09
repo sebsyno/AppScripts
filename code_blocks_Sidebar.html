@@ -145,10 +145,17 @@
     font-family: 'Consolas', 'Courier New', monospace;
     font-size: 11px;
     line-height: 1.5;
-    white-space: pre;
-    overflow-x: auto;
     color: var(--gd-offwhite);
+    white-space: pre-wrap;       /* Wrap flowing lines beautifully */
+    word-break: break-all;
   }
+  
+  .preview-content > div {
+    padding-left: 3.5em;         /* Gutter padding structure matching docs spacing */
+    text-indent: -3.5em;          
+    margin-bottom: 1px;
+  }
+
   .preview-empty {
     color: #617d72;
     font-style: italic;
@@ -228,13 +235,16 @@ const LANGUAGES = [
 let selectedLang = null;
 let rawCode = '';
 
-// Render Grid elements UI
+// Default fallback to first active option on load
+selectedLang = LANGUAGES[0];
+
 const grid = document.getElementById('langGrid');
 LANGUAGES.forEach(lang => {
   const btn = document.createElement('button');
   btn.className = 'lang-btn';
   btn.id = 'lang-' + lang.id;
   btn.innerText = lang.label;
+  if(lang.id === selectedLang.id) btn.classList.add('active');
   btn.onclick = () => selectLang(lang);
   grid.appendChild(btn);
 });
@@ -265,7 +275,6 @@ function setStatus(type, msg) {
 }
 
 function getRules(langId) {
-  // Global catch-all rule fallback for safety
   const globalFallback = [
     { re: /"(?:[^"\\]|\\.)*"/gy, color: '#A5D6A7' },
     { re: /'(?:[^'\\]|\\.)*'/gy, color: '#A5D6A7' },
@@ -273,187 +282,159 @@ function getRules(langId) {
   ];
 
   const rulesMap = {
-    // ─── SCALA (IntelliJ Dracula Variant) ───
     scala: [
-      { re: /\/\/.*/gy, color: '#808080' },                               // Comments: Muted Grey
-      { re: /\/\*[\s\S]*?\*\//gy, color: '#629755' },                     // Scaladoc: Greenish Olive
-      { re: /\b(val|var|def|class|object|trait|extends|with|import|package|case|match|sealed|abstract|override|final|private|protected|implicit|lazy|new|this|super|if|else|for|while|do|return|yield|type|try|catch|finally|throw)\b/gy, color: '#CC7832' }, // Keywords: Dark Orange
-      { re: /"(?:[^"\\]|\\.)*"/gy, color: '#6A8759' },                     // Strings: Forest Green
-      { re: /'(?:[^'\\]|\\.)*'/gy, color: '#6A8759' },                     // Chars: Forest Green
-      { re: /\b(Unit|Int|Long|Double|Float|Boolean|String|Any|AnyRef|Nothing|List|Map|Set|Option|Some|None)\b/gy, color: '#9876AA' }, // Types: Muted Purple
-      { re: /\b0x[\da-fA-F]+\b|\b\d+(?:\.\d+)?(?:[eE][+-]?\d+)?\b/gy, color: '#6897BB' }, // Numbers: Slate Blue
-      { re: /\b(true|false|null|Nil)\b/gy, color: '#CC7832' },             // Booleans/Nulls: Dark Orange
-      { re: /\b[A-Z][a-zA-Z0-9_]*\b/gy, color: '#A9B7C6' },               // Class Names: Off-white
-      { re: /\b[a-z_][a-zA-Z0-9_]*(?=\s*\[|\s*\()/gy, color: '#FFC66D' }   // Methods: Mustard Yellow
+      { re: /\/\/.*/gy, color: '#808080' },                               
+      { re: /\/\*[\s\S]*?\*\//gy, color: '#629755' },                     
+      { re: /\b(val|var|def|class|object|trait|extends|with|import|package|case|match|sealed|abstract|override|final|private|protected|implicit|lazy|new|this|super|if|else|for|while|do|return|yield|type|try|catch|finally|throw)\b/gy, color: '#CC7832' }, 
+      { re: /"(?:[^"\\]|\\.)*"/gy, color: '#6A8759' },                     
+      { re: /'(?:[^'\\]|\\.)*'/gy, color: '#6A8759' },                     
+      { re: /\b(Unit|Int|Long|Double|Float|Boolean|String|Any|AnyRef|Nothing|List|Map|Set|Option|Some|None)\b/gy, color: '#9876AA' }, 
+      { re: /\b0x[\da-fA-F]+\b|\b\d+(?:\.\d+)?(?:[eE][+-]?\d+)?\b/gy, color: '#6897BB' }, 
+      { re: /\b(true|false|null|Nil)\b/gy, color: '#CC7832' },             
+      { re: /\b[A-Z][a-zA-Z0-9_]*\b/gy, color: '#A9B7C6' },               
+      { re: /\b[a-z_][a-zA-Z0-9_]*(?=\s*\[|\s*\()/gy, color: '#FFC66D' }   
     ],
-
-    // ─── JAVA (Classic Eclipse/Standard IDE) ───
     java: [
-      { re: /\/\/.*/gy, color: '#3F7F5F' },                               // Comments: Slate Green
-      { re: /\/\*[\s\S]*?\*\//gy, color: '#3F5FBF' },                     // Javadoc: Dark Blue
-      { re: /\b(public|private|protected|static|final|abstract|class|interface|enum|extends|implements|import|package|new|this|super|return|if|else|for|while|do|switch|case|break|continue|try|catch|finally|throw|throws)\b/gy, color: '#7F0055' }, // Keywords: Deep Maroon
-      { re: /"(?:[^"\\]|\\.)*"/gy, color: '#2A00FF' },                     // Strings: Royal Blue
-      { re: /'(?:[^'\\]|\\.)*'/gy, color: '#2A00FF' },                     // Chars: Royal Blue
-      { re: /\b(void|int|long|double|float|boolean|char|byte|short|String|Object|Integer|List|Map|Set)\b/gy, color: '#000000' }, // Native Types: Black/Bold
-      { re: /\b0x[\da-fA-F]+\b|\b\d+(?:\.\d+)?\b/gy, color: '#000000' },    // Numbers: Black
-      { re: /\b(true|false|null)\b/gy, color: '#7F0055' },                 // Booleans: Deep Maroon
-      { re: /@[a-zA-Z_][a-zA-Z0-9_]*/gy, color: '#646464' },               // Annotations: Charcoal Grey
-      { re: /\b[a-z_][a-zA-Z0-9_]*(?=\s*\()/gy, color: '#000000' }         // Methods: Black
+      { re: /\/\/.*/gy, color: '#3F7F5F' },                               
+      { re: /\/\*[\s\S]*?\*\//gy, color: '#3F5FBF' },                     
+      { re: /\b(public|private|protected|static|final|abstract|class|interface|enum|extends|implements|import|package|new|this|super|return|if|else|for|while|do|switch|case|break|continue|try|catch|finally|throw|throws)\b/gy, color: '#7F0055' }, 
+      { re: /"(?:[^"\\]|\\.)*"/gy, color: '#2A00FF' },                     
+      { re: /'(?:[^'\\]|\\.)*'/gy, color: '#2A00FF' },                     
+      { re: /\b(void|int|long|double|float|boolean|char|byte|short|String|Object|Integer|List|Map|Set)\b/gy, color: '#000000' }, 
+      { re: /\b0x[\da-fA-F]+\b|\b\d+(?:\.\d+)?\b/gy, color: '#000000' },    
+      { re: /\b(true|false|null)\b/gy, color: '#7F0055' },                 
+      { re: /@[a-zA-Z_][a-zA-Z0-9_]*/gy, color: '#646464' },               
+      { re: /\b[a-z_][a-zA-Z0-9_]*(?=\s*\()/gy, color: '#000000' }         
     ],
-
-    // ─── KOTLIN (Modern IntelliJ / Android Studio Palette) ───
     kotlin: [
-      { re: /\/\/.*/gy, color: '#808080' },                               // Line Comments: Muted Grey
-      { re: /\/\*[\s\S]*?\*\//gy, color: '#629755' },                     // Block Comments: KDoc Green
-      { re: /\b(package|import|class|interface|object|struct|fun|val|var|typealias|init|constructor|this|super|return|if|else|when|for|while|do|break|continue|throw|try|catch|finally|as|is|in|out|by|companion|field|property|receiver|param|get|set)\b/gy, color: '#CC7832' }, // Keywords: Dark Orange
-      { re: /\b(private|protected|public|internal|abstract|open|sealed|data|inline|noinline|crossinline|tailrec|operator|infix|external|suspend|override|lateinit|final)\b/gy, color: '#CC7832' }, // Modifiers: Dark Orange
-      { re: /"(?:[^"\\]|\\.)*"/gy, color: '#6A8759' },                     // Strings: Forest Green
-      { re: /"""[\s\S]*?"""/gy, color: '#6A8759' },                       // Raw/Multiline Strings: Forest Green
-      { re: /'(?:[^'\\]|\\.)*'/gy, color: '#6A8759' },                     // Characters: Forest Green
-      { re: /\b(Int|Long|Short|Byte|Double|Float|Boolean|Char|String|Any|Unit|Nothing|List|Map|Set|Sequence|Array)\b/gy, color: '#9876AA' }, // Standard Types: Muted Purple
-      { re: /\b0x[\da-fA-F]+\b|\b\d+(?:\.\d+)?(?:[eE][+-]?\d+)?\b/gy, color: '#6897BB' }, // Numbers: Slate Blue
-      { re: /\b(true|false|null)\b/gy, color: '#CC7832' },                 // Booleans/Nulls: Dark Orange
-      { re: /@[a-zA-Z_][a-zA-Z0-9_]*/gy, color: '#BBB529' },               // Annotations: Soft Olive Gold
-      { re: /\b[a-z_][a-zA-Z0-9_]*(?=\s*\[|\s*\()/gy, color: '#FFC66D' }   // Functions/Methods: Mustard Yellow
+      { re: /\/\/.*/gy, color: '#808080' },                               
+      { re: /\/\*[\s\S]*?\*\//gy, color: '#629755' },                     
+      { re: /\b(package|import|class|interface|object|struct|fun|val|var|typealias|init|constructor|this|super|return|if|else|when|for|while|do|break|continue|throw|try|catch|finally|as|is|in|out|by|companion|field|property|receiver|param|get|set)\b/gy, color: '#CC7832' }, 
+      { re: /\b(private|protected|public|internal|abstract|open|sealed|data|inline|noinline|crossinline|tailrec|operator|infix|external|suspend|override|lateinit|final)\b/gy, color: '#CC7832' }, 
+      { re: /"(?:[^"\\]|\\.)*"/gy, color: '#6A8759' },                     
+      { re: /"""[\s\S]*?"""/gy, color: '#6A8759' },                       
+      { re: /'(?:[^'\\]|\\.)*'/gy, color: '#6A8759' },                     
+      { re: /\b(Int|Long|Short|Byte|Double|Float|Boolean|Char|String|Any|Unit|Nothing|List|Map|Set|Sequence|Array)\b/gy, color: '#9876AA' }, 
+      { re: /\b0x[\da-fA-F]+\b|\b\d+(?:\.\d+)?(?:[eE][+-]?\d+)?\b/gy, color: '#6897BB' }, 
+      { re: /\b(true|false|null)\b/gy, color: '#CC7832' },                 
+      { re: /@[a-zA-Z_][a-zA-Z0-9_]*/gy, color: '#BBB529' },               
+      { re: /\b[a-z_][a-zA-Z0-9_]*(?=\s*\[|\s*\()/gy, color: '#FFC66D' }   
     ],
-
-    // ─── PYTHON (Community / PyCharm Standard) ───
     python: [
-      { re: /#.*/gy, color: '#808080' },                                  // Comments: Muted Grey
-      { re: /"""[\s\S]*?"""/gy, color: '#5C6370' },                       // Docstrings: Soft Grey
-      { re: /\b(def|class|import|from|as|return|if|elif|else|for|while|in|not|and|or|is|pass|break|continue|try|except|finally|raise|with|yield|lambda|global|nonlocal|async|await)\b/gy, color: '#FB8C00' }, // Keywords: Soft Orange
-      { re: /"(?:[^"\\]|\\.)*"/gy, color: '#4CAF50' },                     // Strings: Emerald Green
-      { re: /'(?:[^'\\]|\\.)*'/gy, color: '#4CAF50' },                     // Strings: Emerald Green
-      { re: /@[a-zA-Z_][a-zA-Z0-9_.]*/gy, color: '#BBB529' },               // Decorators: Yellow-Gold
-      { re: /\b(print|len|range|type|list|dict|set|tuple|str|int|float|bool|abs|open)\b/gy, color: '#8888C6' }, // Builtins: Soft Violet
-      { re: /\b0x[\da-fA-F]+\b|\b\d+(?:\.\d+)?\b/gy, color: '#0000FF' },    // Numbers: Pure Blue
-      { re: /\b(None|True|False)\b/gy, color: '#FB8C00' },                 // Booleans/None: Soft Orange
-      { re: /\bself\b/gy, color: '#94558D' },                              // Self: Red-Purple
-      { re: /\b[a-z_][a-zA-Z0-9_]*(?=\s*\()/gy, color: '#FFC66D' }         // Functions: Warm Sand
+      { re: /#.*/gy, color: '#808080' },                                  
+      { re: /"""[\s\S]*?"""/gy, color: '#5C6370' },                       
+      { re: /\b(def|class|import|from|as|return|if|elif|else|for|while|in|not|and|or|is|pass|break|continue|try|except|finally|raise|with|yield|lambda|global|nonlocal|async|await)\b/gy, color: '#FB8C00' }, 
+      { re: /"(?:[^"\\]|\\.)*"/gy, color: '#4CAF50' },                     
+      { re: /'(?:[^'\\]|\\.)*'/gy, color: '#4CAF50' },                     
+      { re: /@[a-zA-Z_][a-zA-Z0-9_.]*/gy, color: '#BBB529' },               
+      { re: /\b(print|len|range|type|list|dict|set|tuple|str|int|float|bool|abs|open)\b/gy, color: '#8888C6' }, 
+      { re: /\b0x[\da-fA-F]+\b|\b\d+(?:\.\d+)?\b/gy, color: '#0000FF' },    
+      { re: /\b(None|True|False)\b/gy, color: '#FB8C00' },                 
+      { re: /\bself\b/gy, color: '#94558D' },                              
+      { re: /\b[a-z_][a-zA-Z0-9_]*(?=\s*\()/gy, color: '#FFC66D' }         
     ],
-
-    // ─── BASH / SHELL (Classic Monokai Terminal Layout) ───
     bash: [
-      { re: /#.*/gy, color: '#75715E' },                                  // Comments: Muddy Greenish Grey
-      { re: /\b(if|then|else|elif|fi|for|while|do|done|case|esac|in|function|return|exit|export|local)\b/gy, color: '#F92672' }, // Keywords: Hot Pink
-      { re: /"(?:[^"\\]|\\.)*"/gy, color: '#E6DB74' },                     // Strings: Straw Yellow
-      { re: /'(?:[^'\\]|\\.)*'/gy, color: '#E6DB74' },                     // Strings: Straw Yellow
-      { re: /\b(echo|cd|ls|pwd|grep|awk|sed|mkdir|rm|cp|mv|touch|chmod|sudo|cat)\b/gy, color: '#66D9EF' }, // Commands: Electric Cyan
-      { re: /\$[a-zA-Z_][a-zA-Z0-9_]*|\$\{[a-zA-Z_][a-zA-Z0-9_]*\}/gy, color: '#AE81FF' }, // Variables: Soft Purple
-      { re: /\b\d+\b/gy, color: '#AE81FF' }                                // Numbers: Soft Purple
+      { re: /#.*/gy, color: '#75715E' },                                  
+      { re: /\b(if|then|else|elif|fi|for|while|do|done|case|esac|in|function|return|exit|export|local)\b/gy, color: '#F92672' }, 
+      { re: /"(?:[^"\\]|\\.)*"/gy, color: '#E6DB74' },                     
+      { re: /'(?:[^'\\]|\\.)*'/gy, color: '#E6DB74' },                     
+      { re: /\b(echo|cd|ls|pwd|grep|awk|sed|mkdir|rm|cp|mv|touch|chmod|sudo|cat)\b/gy, color: '#66D9EF' }, 
+      { re: /\$[a-zA-Z_][a-zA-Z0-9_]*|\$\{[a-zA-Z_][a-zA-Z0-9_]*\}/gy, color: '#AE81FF' }, 
+      { re: /\b\d+\b/gy, color: '#AE81FF' }                                
     ],
-
-    // ─── JAVASCRIPT (Modern VS Code Dark+) ───
     javascript: [
-      { re: /\/\/.*/gy, color: '#6A9955' },                               // Comments: Warm Green
-      { re: /\/\*[\s\S]*?\*\//gy, color: '#6A9955' },                     // Block Comments: Warm Green
-      { re: /\b(const|let|var|function|return|if|else|for|while|do|switch|case|break|continue|new|this|class|extends|import|export|default|from|of|in|try|catch|finally|throw|typeof|instanceof|async|await)\b/gy, color: '#569CD6' }, // Keywords: Light Blue
-      { re: /"(?:[^"\\]|\\.)*"/gy, color: '#CE9178' },                     // Strings: Salmon Red
-      { re: /'(?:[^'\\]|\\.)*'/gy, color: '#CE9178' },                     // Strings: Salmon Red
-      { re: /`[^`]*`/gy,            color: '#CE9178' },                    // Template Strings: Salmon Red
-      { re: /\b0x[\da-fA-F]+\b|\b\d+(?:\.\d+)?\b/gy, color: '#B5CEA8' },    // Numbers: Light Sage Green
-      { re: /\b(true|false|null|undefined)\b/gy, color: '#569CD6' },       // Primitives: Light Blue
-      { re: /\b(window|document|console|Object|Array|String|Number|Boolean|Promise|JSON|Map|Set)\b/gy, color: '#4EC9B0' }, // Objects: Mint Turquoise
-      { re: /\b[a-zA-Z_][a-zA-Z0-9_]*(?=\s*\()/gy, color: '#DCDCAA' }      // Functions: Pale Yellow
+      { re: /\/\/.*/gy, color: '#6A9955' },                               
+      { re: /\/\*[\s\S]*?\*\//gy, color: '#6A9955' },                     
+      { re: /\b(const|let|var|function|return|if|else|for|while|do|switch|case|break|continue|new|this|class|extends|import|export|default|from|of|in|try|catch|finally|throw|typeof|instanceof|async|await)\b/gy, color: '#569CD6' }, 
+      { re: /"(?:[^"\\]|\\.)*"/gy, color: '#CE9178' },                     
+      { re: /'(?:[^'\\]|\\.)*'/gy, color: '#CE9178' },                     
+      { re: /`[^`]*`/gy,            color: '#CE9178' },                    
+      { re: /\b0x[\da-fA-F]+\b|\b\d+(?:\.\d+)?\b/gy, color: '#B5CEA8' },    
+      { re: /\b(true|false|null|undefined)\b/gy, color: '#569CD6' },       
+      { re: /\b(window|document|console|Object|Array|String|Number|Boolean|Promise|JSON|Map|Set)\b/gy, color: '#4EC9B0' }, 
+      { re: /\b[a-zA-Z_][a-zA-Z0-9_]*(?=\s*\()/gy, color: '#DCDCAA' }      
     ],
-
-    // ─── TYPESCRIPT (Slightly altered VS Code Palette) ───
     typescript: [
-      { re: /\/\/.*/gy, color: '#6A9955' },                               // Comments: Warm Green
-      { re: /\/\*[\s\S]*?\*\//gy, color: '#6A9955' },                     // Block Comments: Warm Green
-      { re: /\b(const|let|var|function|return|if|else|for|while|do|switch|case|break|continue|new|this|class|extends|import|export|default|from|of|in|try|catch|finally|throw|typeof|instanceof|async|await|interface|type|enum|implements|private|public|protected|readonly|abstract|declare|namespace|as|keyof|any|unknown|void|never)\b/gy, color: '#569CD6' }, // Keywords: Light Blue
-      { re: /"(?:[^"\\]|\\.)*"/gy, color: '#CE9178' },                     // Strings: Salmon Red
-      { re: /'(?:[^'\\]|\\.)*'/gy, color: '#CE9178' },                     // Strings: Salmon Red
-      { re: /`[^`]*`/gy,            color: '#CE9178' },                    // Templates: Salmon Red
-      { re: /\b(string|number|boolean|symbol|object|Array|Promise|Record|Omit|Pick|Partial|Required)\b/gy, color: '#4EC9B0' }, // Global Interfaces: Mint Turquoise
-      { re: /\b0x[\da-fA-F]+\b|\b\d+(?:\.\d+)?\b/gy, color: '#B5CEA8' },    // Numbers: Light Sage Green
-      { re: /\b(true|false|null|undefined)\b/gy, color: '#569CD6' },       // Primitives: Light Blue
-      { re: /\b[A-Z][a-zA-Z0-9_]*\b/gy, color: '#C586C0' },               // Custom Types/Interfaces: Dark Pink
-      { re: /@[a-zA-Z_][a-zA-Z0-9_]*/gy, color: '#CD9731' },               // Decorators: Ochre Orange
-      { re: /\b[a-zA-Z_][a-zA-Z0-9_]*(?=\s*\()/gy, color: '#DCDCAA' }      // Functions: Pale Yellow
+      { re: /\/\/.*/gy, color: '#6A9955' },                               
+      { re: /\/\*[\s\S]*?\*\//gy, color: '#6A9955' },                     
+      { re: /\b(const|let|var|function|return|if|else|for|while|do|switch|case|break|continue|new|this|class|extends|import|export|default|from|of|in|try|catch|finally|throw|typeof|instanceof|async|await|interface|type|enum|implements|private|public|protected|readonly|abstract|declare|namespace|as|keyof|any|unknown|void|never)\b/gy, color: '#569CD6' }, 
+      { re: /"(?:[^"\\]|\\.)*"/gy, color: '#CE9178' },                     
+      { re: /'(?:[^'\\]|\\.)*'/gy, color: '#CE9178' },                     
+      { re: /`[^`]*`/gy,            color: '#CE9178' },                    
+      { re: /\b(string|number|boolean|symbol|object|Array|Promise|Record|Omit|Pick|Partial|Required)\b/gy, color: '#4EC9B0' }, 
+      { re: /\b0x[\da-fA-F]+\b|\b\d+(?:\.\d+)?\b/gy, color: '#B5CEA8' },    
+      { re: /\b(true|false|null|undefined)\b/gy, color: '#569CD6' },       
+      { re: /\b[A-Z][a-zA-Z0-9_]*\b/gy, color: '#C586C0' },               
+      { re: /@[a-zA-Z_][a-zA-Z0-9_]*/gy, color: '#CD9731' },               
+      { re: /\b[a-zA-Z_][a-zA-Z0-9_]*(?=\s*\()/gy, color: '#DCDCAA' }      
     ],
-
-    // ─── GO (Golar White/Blue Base) ───
     go: [
-      { re: /\/\/.*/gy, color: '#6A9955' },                               // Comments: Warm Green
+      { re: /\/\/.*/gy, color: '#6A9955' },                               
       { re: /\/\*[\s\S]*?\*\//gy, color: '#6A9955' },
-      { re: /\b(package|import|func|var|const|type|struct|interface|map|chan|go|defer|return|if|else|for|range|switch|case|default|fallthrough|break|continue)\b/gy, color: '#C586C0' }, // Keywords: Magenta
-      { re: /"(?:[^"\\]|\\.)*"/gy, color: '#CE9178' },                     // Strings: Salmon
-      { re: /`[^`]*`/gy,            color: '#CE9178' },                    // Raw Strings: Salmon
-      { re: /\b(string|bool|int|int8|int16|int32|int64|uint|uint8|uint16|uint32|uint64|float32|float64|complex64|complex128|byte|rune|uintptr|error)\b/gy, color: '#569CD6' }, // Types: Light Blue
-      { re: /\b0x[\da-fA-F]+\b|\b\d+(?:\.\d+)?\b/gy, color: '#B5CEA8' },    // Numbers: Light Sage
-      { re: /\b(true|false|nil)\b/gy, color: '#C586C0' },                  // Primitives: Magenta
-      { re: /\b[a-zA-Z_][a-zA-Z0-9_]*(?=\s*\()/gy, color: '#DCDCAA' }      // Functions: Pale Yellow
+      { re: /\b(package|import|func|var|const|type|struct|interface|map|chan|go|defer|return|if|else|for|range|switch|case|default|fallthrough|break|continue)\b/gy, color: '#C586C0' }, 
+      { re: /"(?:[^"\\]|\\.)*"/gy, color: '#CE9178' },                     
+      { re: /`[^`]*`/gy,            color: '#CE9178' },                    
+      { re: /\b(string|bool|int|int8|int16|int32|int64|uint|uint8|uint16|uint32|uint64|float32|float64|complex64|complex128|byte|rune|uintptr|error)\b/gy, color: '#569CD6' }, 
+      { re: /\b0x[\da-fA-F]+\b|\b\d+(?:\.\d+)?\b/gy, color: '#B5CEA8' },    
+      { re: /\b(true|false|nil)\b/gy, color: '#C586C0' },                  
+      { re: /\b[a-zA-Z_][a-zA-Z0-9_]*(?=\s*\()/gy, color: '#DCDCAA' }      
     ],
-
-    // ─── RUST (Rust-Lang Orange/Cyan Framework) ───
     rust: [
-      { re: /\/\/.*/gy, color: '#9E9E9E' },                               // Comments: Flat Grey
-      { re: /\b(fn|let|mut|const|static|struct|enum|trait|impl|use|mod|pub|self|Self|if|else|match|for|while|loop|return|break|continue|async|await|type|where|unsafe|move)\b/gy, color: '#E06C75' }, // Keywords: Soft Coral
-      { re: /"(?:[^"\\]|\\.)*"/gy, color: '#98C379' },                     // Strings: Soft Green
-      { re: /\b(i8|i16|i32|i64|i128|isize|u8|u16|u32|u64|u128|usize|f32|f64|str|String|Option|Result|Some|None|Ok|Err|Box|Vec)\b/gy, color: '#E5C07B' }, // Types: Soft Gold
-      { re: /\b0x[\da-fA-F]+\b|\b\d+(?:\.\d+)?\b/gy, color: '#D19A66' },    // Numbers: Light Amber
-      { re: /\b(true|false)\b/gy, color: '#E06C75' },                      // Booleans: Soft Coral
-      { re: /[a-zA-Z_][a-zA-Z0-9_]*!/gy, color: '#61AFEF' },               // Macros: Sky Blue
-      { re: /\b[a-zA-Z_][a-zA-Z0-9_]*(?=\s*\()/gy, color: '#61AFEF' }      // Functions: Sky Blue
+      { re: /\/\/.*/gy, color: '#9E9E9E' },                               
+      { re: /\b(fn|let|mut|const|static|struct|enum|trait|impl|use|mod|pub|self|Self|if|else|match|for|while|loop|return|break|continue|async|await|type|where|unsafe|move)\b/gy, color: '#E06C75' }, 
+      { re: /"(?:[^"\\]|\\.)*"/gy, color: '#98C379' },                     
+      { re: /\b(i8|i16|i32|i64|i128|isize|u8|u16|u32|u64|u128|usize|f32|f64|str|String|Option|Result|Some|None|Ok|Err|Box|Vec)\b/gy, color: '#E5C07B' }, 
+      { re: /\b0x[\da-fA-F]+\b|\b\d+(?:\.\d+)?\b/gy, color: '#D19A66' },    
+      { re: /\b(true|false)\b/gy, color: '#E06C75' },                      
+      { re: /[a-zA-Z_][a-zA-Z0-9_]*!/gy, color: '#61AFEF' },               
+      { re: /\b[a-zA-Z_][a-zA-Z0-9_]*(?=\s*\()/gy, color: '#61AFEF' }      
     ],
-
-    // ─── SQL (Classic Database Layout) ───
     sql: [
-      { re: /--.*/gy, color: '#008000' },                                  // Comments: Forest Green
-      { re: /\b(SELECT|FROM|WHERE|JOIN|LEFT|RIGHT|INNER|OUTER|ON|GROUP|ORDER|BY|HAVING|LIMIT|INSERT|INTO|VALUES|UPDATE|SET|DELETE|CREATE|DROP|ALTER|TABLE|INDEX|VIEW|AS|AND|OR|NOT|IN|IS|NULL|CASE|WHEN|THEN|ELSE|END|WITH|UNION|ALL|EXISTS|LIKE|BETWEEN)\b/giy, color: '#0000FF' }, // Keywords: Dark Corporate Blue
-      { re: /"(?:[^"\\]|\\.)*"/gy, color: '#FF00FF' },                     // Quotes: Magenta
-      { re: /'(?:[^'\\]|\\.)*'/gy, color: '#FF00FF' },                     // Quotes: Magenta
-      { re: /\b(int|integer|varchar|char|text|boolean|bool|date|time|timestamp|float|double|decimal|numeric)\b/giy, color: '#800000' }, // Types: Maroon
-      { re: /\b\d+(?:\.\d+)?\b/gy, color: '#FF0000' },                     // Numbers: Red
-      { re: /\b(COUNT|SUM|AVG|MIN|MAX|COALESCE|CAST|NOW|LOWER|UPPER)\b/giy, color: '#FF00FF' } // System Functions: Magenta
+      { re: /--.*/gy, color: '#008000' },                                  
+      { re: /\b(SELECT|FROM|WHERE|JOIN|LEFT|RIGHT|INNER|OUTER|ON|GROUP|ORDER|BY|HAVING|LIMIT|INSERT|INTO|VALUES|UPDATE|SET|DELETE|CREATE|DROP|ALTER|TABLE|INDEX|VIEW|AS|AND|OR|NOT|IN|IS|NULL|CASE|WHEN|THEN|ELSE|END|WITH|UNION|ALL|EXISTS|LIKE|BETWEEN)\b/giy, color: '#0000FF' }, 
+      { re: /"(?:[^"\\]|\\.)*"/gy, color: '#FF00FF' },                     
+      { re: /'(?:[^'\\]|\\.)*'/gy, color: '#FF00FF' },                     
+      { re: /\b(int|integer|varchar|char|text|boolean|bool|date|time|timestamp|float|double|decimal|numeric)\b/giy, color: '#800000' }, 
+      { re: /\b\d+(?:\.\d+)?\b/gy, color: '#FF0000' },                     
+      { re: /\b(COUNT|SUM|AVG|MIN|MAX|COALESCE|CAST|NOW|LOWER|UPPER)\b/giy, color: '#FF00FF' } 
     ],
-
-    // ─── YAML (Minimalist Slate Config style) ───
     yaml: [
-      { re: /#.*/gy, color: '#7A8A99' },                                  // Comments: Blue Slate
-      { re: /^(\s*-?\s*[a-zA-Z_][a-zA-Z0-9_\-]*)\s*:/gmy, color: '#0058C4' }, // Struct Keys: Deep Royal Blue
-      { re: /"(?:[^"\\]|\\.)*"/gy, color: '#17A2B8' },                     // Strings: Teal
-      { re: /'(?:[^'\\]|\\.)*'/gy, color: '#17A2B8' },                     // Strings: Teal
-      { re: /\b(true|false|null|yes|no)\b/gy, color: '#D9381E' },          // Directives: Crimson
-      { re: /\b\d+(?:\.\d+)?\b/gy, color: '#6F42C1' }                      // Numbers: Deep Violet
+      { re: /#.*/gy, color: '#7A8A99' },                                  
+      { re: /^(\s*-?\s*[a-zA-Z_][a-zA-Z0-9_\-]*)\s*:/gmy, color: '#0058C4' }, 
+      { re: /"(?:[^"\\]|\\.)*"/gy, color: '#17A2B8' },                     
+      { re: /'(?:[^'\\]|\\.)*'/gy, color: '#17A2B8' },                     
+      { re: /\b(true|false|null|yes|no)\b/gy, color: '#D9381E' },          
+      { re: /\b\d+(?:\.\d+)?\b/gy, color: '#6F42C1' }                      
     ],
-
-    // ─── JSON (Native Node/Chrome Inspector styling) ───
     json: [
-      { re: /"(?:[^"\\]|\\.)*"\s*(?=:)/gy, color: '#92278F' },             // JSON Properties: Dark Purple
-      { re: /"(?:[^"\\]|\\.)*"/gy, color: '#2B8339' },                     // Values: Forest Green
-      { re: /\b(true|false|null)\b/gy, color: '#252525' },                 // Active Core elements: Off-black
-      { re: /\b\d+(?:\.\d+)?\b/gy, color: '#1F77B4' }                      // Numbers: Blue
+      { re: /"(?:[^"\\]|\\.)*"\s*(?=:)/gy, color: '#92278F' },             
+      { re: /"(?:[^"\\]|\\.)*"/gy, color: '#2B8339' },                     
+      { re: /\b(true|false|null)\b/gy, color: '#252525' },                 
+      { re: /\b\d+(?:\.\d+)?\b/gy, color: '#1F77B4' }                      
     ],
-
-    // ─── MARKDOWN (Classic GitHub Dark Theme Accents) ───
     markdown: [
-      { re: /^#{1,6}\s.*/gmy,       color: '#58A6FF' },                    // Headings: Markdown Cyan-Blue
-      { re: /^\s*[-*+]\s|^\s*\d+\.\s/gmy, color: '#FF7B72' },              // Bullets and Lists: Coral Red
-      { re: /`[^`]+`/gy,            color: '#FFA657' },                    // Inline Backticks: Pale Orange
-      { re: /\*\*[^*]+\*\*/gy,      color: '#FFFFFF' },                    // Bold Structural Highlights: White
-      { re: /\*[^*]+\*/gy,          color: '#8B949E' },                    // Italics: Distant Grey
-      { re: /^\s*>\s.*/gmy,         color: '#8B949E' }                     // Blockquotes: Distant Grey
+      { re: /^#{1,6}\s.*/gmy,       color: '#58A6FF' },                    
+      { re: /^\s*[-*+]\s|^\s*\d+\.\s/gmy, color: '#FF7B72' },              
+      { re: /`[^`]+`/gy,            color: '#FFA657' },                    
+      { re: /\*\*[^*]+\*\*/gy,      color: '#FFFFFF' },                    
+      { re: /\*[^*]+\*/gy,          color: '#8B949E' },                    
+      { re: /^\s*>\s.*/gmy,         color: '#8B949E' }                     
     ]
   };
 
   return rulesMap[langId] || globalFallback;
 }
 
-/**
- * Tokenizes raw text string strings into explicit styling token maps
- */
-function tokenizeLine(line, langId) {
+function tokenizeAll(fullText, langId) {
   const rules = getRules(langId);
   let tokens = [];
   let i = 0;
   
-  while (i < line.length) {
+  while (i < fullText.length) {
     let matched = false;
     for (const rule of rules) {
       rule.re.lastIndex = i;
-      const m = rule.re.exec(line);
+      const m = rule.re.exec(fullText);
       if (m && m.index === i) {
         tokens.push({ text: m[0], color: rule.color });
         i += m[0].length;
@@ -462,16 +443,36 @@ function tokenizeLine(line, langId) {
       }
     }
     if (!matched) {
-      // Aggregate plain unformatted layout characters
       if (tokens.length > 0 && !tokens[tokens.length - 1].color) {
-        tokens[tokens.length - 1].text += line[i];
+        tokens[tokens.length - 1].text += fullText[i];
       } else {
-        tokens.push({ text: line[i], color: '#E2F5DB' });
+        tokens.push({ text: fullText[i], color: '#E2F5DB' });
       }
       i++;
     }
   }
   return tokens;
+}
+
+/**
+ * Robustly breaks global tokens across line break thresholds
+ * without filtering out empty structural content gaps.
+ */
+function splitTokensIntoLines(globalTokens) {
+  let lines = [[]];
+  
+  globalTokens.forEach(token => {
+    const parts = token.text.split('\n');
+    for (let i = 0; i < parts.length; i++) {
+      // Even if a part is an empty string, keep it to preserve structure
+      lines[lines.length - 1].push({ text: parts[i], color: token.color });
+      if (i < parts.length - 1) {
+        lines.push([]); 
+      }
+    }
+  });
+  
+  return lines;
 }
 
 function renderPreview() {
@@ -480,14 +481,21 @@ function renderPreview() {
     el.innerHTML = '<span class="preview-empty">No active selection captured.</span>';
     return;
   }
-  const langId = selectedLang ? selectedLang.id : 'javascript';
-  const lines = rawCode.split('\n');
+  const langId = selectedLang ? selectedLang.id : 'scala';
+  
+  const globalTokens = tokenizeAll(rawCode, langId);
+  const tokenLines = splitTokensIntoLines(globalTokens);
   
   let html = '';
-  lines.forEach((line, idx) => {
-    const tokens = tokenizeLine(line, langId);
-    const lineHtml = tokens.map(t => `<span style="color:${t.color}">${escapeHtml(t.text)}</span>`).join('');
-    html += `<div><span style="color:#67E387; opacity:0.5; user-select:none; margin-right:10px;">${idx+1}</span>${lineHtml || ' '}</div>`;
+  tokenLines.forEach((lineTokens, idx) => {
+    // Generate inner text layouts, defaulting to space if empty
+    let lineHtml = lineTokens.map(t => {
+      return t.text ? `<span style="color:${t.color}">${escapeHtml(t.text)}</span>` : '';
+    }).join('');
+    
+    if (!lineHtml) lineHtml = '&nbsp;';
+    
+    html += `<div><span style="color:#67E387; opacity:0.5; user-select:none; margin-right:10px; display:inline-block; width:2em; text-align:right;">${idx+1}</span>${lineHtml}</div>`;
   });
   el.innerHTML = html;
 }
@@ -507,9 +515,8 @@ function applyFormatting() {
   btn.disabled = true;
   btn.textContent = 'Formatting Doc...';
   
-  // Transform entire text chunk layout into serialized dynamic tokens map matrix
-  const lines = rawCode.split('\n');
-  const tokenizedPayload = lines.map(line => tokenizeLine(line, selectedLang.id));
+  const globalTokens = tokenizeAll(rawCode, selectedLang.id);
+  const tokenizedPayload = splitTokensIntoLines(globalTokens);
   
   google.script.run
     .withSuccessHandler(() => {
@@ -535,6 +542,7 @@ function pollSelection() {
     .getSelectedText();
 }
 
+// Start tracking execution intervals
 setInterval(pollSelection, 1500);
 </script>
 </body>
