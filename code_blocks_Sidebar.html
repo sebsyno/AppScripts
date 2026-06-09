@@ -212,6 +212,7 @@
 const LANGUAGES = [
   { id:'scala',      label:'Scala',   ext:'scala' },
   { id:'java',       label:'Java',    ext:'java' },
+  { id:'kotlin',     label:'Kotlin',  ext:'kt' },
   { id:'python',     label:'Python',  ext:'py' },
   { id:'bash',       label:'Bash/Sh', ext:'sh' },
   { id:'javascript', label:'JS',      ext:'js' },
@@ -298,6 +299,22 @@ function getRules(langId) {
       { re: /\b(true|false|null)\b/gy, color: '#7F0055' },                 // Booleans: Deep Maroon
       { re: /@[a-zA-Z_][a-zA-Z0-9_]*/gy, color: '#646464' },               // Annotations: Charcoal Grey
       { re: /\b[a-z_][a-zA-Z0-9_]*(?=\s*\()/gy, color: '#000000' }         // Methods: Black
+    ],
+
+    // ─── KOTLIN (Modern IntelliJ / Android Studio Palette) ───
+    kotlin: [
+      { re: /\/\/.*/gy, color: '#808080' },                               // Line Comments: Muted Grey
+      { re: /\/\*[\s\S]*?\*\//gy, color: '#629755' },                     // Block Comments: KDoc Green
+      { re: /\b(package|import|class|interface|object|struct|fun|val|var|typealias|init|constructor|this|super|return|if|else|when|for|while|do|break|continue|throw|try|catch|finally|as|is|in|out|by|companion|field|property|receiver|param|get|set)\b/gy, color: '#CC7832' }, // Keywords: Dark Orange
+      { re: /\b(private|protected|public|internal|abstract|open|sealed|data|inline|noinline|crossinline|tailrec|operator|infix|external|suspend|override|lateinit|final)\b/gy, color: '#CC7832' }, // Modifiers: Dark Orange
+      { re: /"(?:[^"\\]|\\.)*"/gy, color: '#6A8759' },                     // Strings: Forest Green
+      { re: /"""[\s\S]*?"""/gy, color: '#6A8759' },                       // Raw/Multiline Strings: Forest Green
+      { re: /'(?:[^'\\]|\\.)*'/gy, color: '#6A8759' },                     // Characters: Forest Green
+      { re: /\b(Int|Long|Short|Byte|Double|Float|Boolean|Char|String|Any|Unit|Nothing|List|Map|Set|Sequence|Array)\b/gy, color: '#9876AA' }, // Standard Types: Muted Purple
+      { re: /\b0x[\da-fA-F]+\b|\b\d+(?:\.\d+)?(?:[eE][+-]?\d+)?\b/gy, color: '#6897BB' }, // Numbers: Slate Blue
+      { re: /\b(true|false|null)\b/gy, color: '#CC7832' },                 // Booleans/Nulls: Dark Orange
+      { re: /@[a-zA-Z_][a-zA-Z0-9_]*/gy, color: '#BBB529' },               // Annotations: Soft Olive Gold
+      { re: /\b[a-z_][a-zA-Z0-9_]*(?=\s*\[|\s*\()/gy, color: '#FFC66D' }   // Functions/Methods: Mustard Yellow
     ],
 
     // ─── PYTHON (Community / PyCharm Standard) ───
