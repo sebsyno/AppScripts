@@ -1,30 +1,27 @@
 # AppScripts Code Blocks
 
-You need to add Drive API and Google Docs API so the Code Blocks script can work.
-
+1. Initial Setup
+Enable APIs: In your Apps Script project, add both the Drive API and the Google Docs API.
 <img width="748" height="1013" alt="image" src="https://github.com/user-attachments/assets/481472be-92ab-4204-bfbe-74278bd16b7e" />
 
-Once you added both, copy code_blocks_code.gs into the already created file and save it. 
-Make sure to delete all the example code that was there beforehand.
+Add the Script: Open your existing script file, delete any default template code, and paste the contents of code_blocks_code.gs. Save the file.
 
-The create a new HTML file.
-
+Create the Sidebar: Create a new HTML file, name it sidebar, and paste the contents of code_blocks_Sidebar.html.
 <img width="330" height="159" alt="image" src="https://github.com/user-attachments/assets/e320f9d9-91a9-4273-bcd2-5960d03495b0" />
 
-Name it sidebar and copy the whole code from code_blocks_Sidebar.html
+Save & Refresh: Save your project, return to your Google Doc, and refresh the page.
 
-Make sure to save the whole thing before leaving the AppScript editor.
-Once you have done so go back to your doc, and refresh the page.
-
-Now you'll find in the menu the option "Code Formatter"
-
+2. How to Use the Formatter
+Click Code Formatter in the Google Docs menu.
 <img width="651" height="51" alt="image" src="https://github.com/user-attachments/assets/3d4f0ef1-49d2-48ef-9d37-bcd7c2fa4020" />
 
-Click it, grant access, and use the formatter.
+Grant the necessary permissions when prompted.
 
+Highlight the text you want to format.
+
+Select your programming language in the sidebar.
+
+Review the preview, then click Insert Code Block into Doc.
 <img width="324" height="418" alt="image" src="https://github.com/user-attachments/assets/c951fe5f-cc4a-48ab-8c1b-ef01cc74ed18" />
 
-Highlight the block of text that needs to be a code, and choose the language in the code formatter, and then click "Insert Code Block into Doc" once you see the right code in the preview window.
-
-Little bug:
-When you need to redo a code that was already formatted it will take the numbers with it, so you will need to delete the numbers, that doubled themselves. If the code is too long, I suggest copying the original and formatting it a new, or going back by pressing CMD/CTRL Z.
+⚠️ Known Issue: Re-formatting an already formatted block may duplicate the line numbers. To fix this, either manually delete the extra numbers, undo the change using Cmd/Ctrl + Z, or paste the original unformatted code and try again.
